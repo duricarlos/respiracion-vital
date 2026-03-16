@@ -407,10 +407,10 @@ function BreathingTimer({
       </span>
 
       {/* Main breathing circle with timer */}
-      <div className="relative flex h-80 w-80 items-center justify-center sm:h-96 sm:w-96">
+      <div className="relative flex h-80 w-80 items-center justify-center sm:h-96 sm:w-96 md:h-[28rem] md:w-[28rem]">
         {/* Outer glow */}
         <div
-          className={`absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full sm:h-96 sm:w-96 ${breatheClass}`}
+          className={`absolute inset-0 rounded-full ${breatheClass}`}
           style={
             {
               "--duration": `${totalPhaseTime}s`,
@@ -421,7 +421,7 @@ function BreathingTimer({
 
         {/* Progress ring SVG */}
         <svg
-          className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 -rotate-90 sm:h-80 sm:w-80"
+          className="absolute inset-0 m-auto h-72 w-72 -rotate-90 sm:h-80 sm:w-80 md:h-96 md:w-96"
           viewBox="0 0 300 300"
         >
           <circle
@@ -460,7 +460,7 @@ function BreathingTimer({
 
         {/* Inner breathing circle */}
         <div
-          className={`absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full sm:h-56 sm:w-56 ${breatheClass}`}
+          className={`absolute inset-0 m-auto h-48 w-48 rounded-full sm:h-56 sm:w-56 md:h-64 md:w-64 ${breatheClass}`}
           style={
             {
               "--duration": `${totalPhaseTime}s`,
@@ -473,13 +473,13 @@ function BreathingTimer({
         {/* Center content */}
         <div className="relative z-10 flex flex-col items-center">
           <span
-            className={`text-8xl font-extralight tabular-nums leading-none drop-shadow-lg sm:text-9xl bg-gradient-to-b ${phaseColors[phase]} bg-clip-text text-transparent`}
+            className={`text-8xl font-extralight tabular-nums leading-none drop-shadow-lg sm:text-9xl md:text-[11rem] bg-gradient-to-b ${phaseColors[phase]} bg-clip-text text-transparent`}
             style={{ fontFamily: "var(--font-cormorant)" }}
           >
             {secondsLeft}
           </span>
           <span
-            className={`mt-2 text-xl font-light tracking-wide sm:text-2xl bg-gradient-to-r ${phaseColors[phase]} bg-clip-text text-transparent`}
+            className={`mt-2 text-xl font-light tracking-wide sm:text-2xl md:text-3xl bg-gradient-to-r ${phaseColors[phase]} bg-clip-text text-transparent`}
             style={{ fontFamily: "var(--font-cormorant)" }}
           >
             {phaseLabels[phase]}
