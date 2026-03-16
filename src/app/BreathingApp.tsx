@@ -14,7 +14,7 @@ type Phase = "inhale" | "hold" | "exhale";
 type AppState = "wizard" | "breathing" | "complete";
 
 interface BreathingConfig {
-  baseTime: number; // in seconds (the "1" in 1-4-2)
+  baseTime: number;
   cycles: number;
 }
 
@@ -23,10 +23,9 @@ interface BreathingConfig {
 function WelcomeStep({ onNext }: { onNext: () => void }) {
   return (
     <div className="animate-float-in flex flex-col items-center gap-10 text-center">
-      {/* Breathing circle animation */}
-      <div className="relative flex items-center justify-center">
-        <div className="absolute h-48 w-48 rounded-full border border-accent/10 animate-breathe-hold" />
-        <div className="absolute h-36 w-36 rounded-full border border-accent/20 animate-breathe-hold [animation-delay:0.3s]" />
+      <div className="relative flex h-48 w-48 items-center justify-center">
+        <div className="absolute inset-0 rounded-full border border-accent/10 animate-breathe-hold" />
+        <div className="absolute inset-6 rounded-full border border-accent/20 animate-breathe-hold [animation-delay:0.3s]" />
         <div className="h-20 w-20 rounded-full bg-gradient-to-br from-accent to-accent-cyan opacity-80 shadow-[0_0_60px_rgba(94,234,212,0.3)] animate-breathe-hold [animation-delay:0.6s]" />
       </div>
 
@@ -91,18 +90,16 @@ function TimeStep({
       </div>
 
       {/* Large number display */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="relative">
-          <span
-            className="block text-9xl font-extralight tabular-nums text-accent drop-shadow-[0_0_30px_rgba(94,234,212,0.3)]"
-            style={{ fontFamily: "var(--font-cormorant)" }}
-          >
-            {baseTime}
-          </span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-sm font-medium text-secondary">
-            segundos
-          </span>
-        </div>
+      <div className="flex flex-col items-center">
+        <span
+          className="block text-9xl font-extralight tabular-nums text-accent drop-shadow-[0_0_30px_rgba(94,234,212,0.3)] leading-none"
+          style={{ fontFamily: "var(--font-cormorant)" }}
+        >
+          {baseTime}
+        </span>
+        <span className="mt-2 text-sm font-medium text-secondary">
+          segundos
+        </span>
       </div>
 
       {/* Slider */}
@@ -161,7 +158,7 @@ function TimePreview({
   return (
     <div className="flex flex-col items-center gap-1">
       <span
-        className={`bg-gradient-to-b ${color} bg-clip-text text-3xl font-light tabular-nums text-transparent sm:text-4xl`}
+        className={`bg-gradient-to-b ${color} bg-clip-text text-3xl font-light tabular-nums text-transparent leading-none sm:text-4xl`}
         style={{ fontFamily: "var(--font-cormorant)" }}
       >
         {seconds}
@@ -206,7 +203,7 @@ function CyclesStep({
         </p>
       </div>
 
-      {/* Cycle selector - large buttons */}
+      {/* Cycle selector */}
       <div className="flex items-center gap-6">
         <button
           onClick={() => onChange(Math.max(1, cycles - 1))}
@@ -216,7 +213,7 @@ function CyclesStep({
           -
         </button>
         <span
-          className="text-8xl font-extralight tabular-nums text-accent drop-shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+          className="text-8xl font-extralight tabular-nums text-accent drop-shadow-[0_0_30px_rgba(94,234,212,0.3)] leading-none"
           style={{ fontFamily: "var(--font-cormorant)" }}
         >
           {cycles}
@@ -283,11 +280,11 @@ function BreathingTimer({
   const secondsRef = useRef(config.baseTime);
   const cycleRef = useRef(1);
 
-  const phaseDurations = {
+  const phaseDurations = useRef({
     inhale: config.baseTime,
     hold: config.baseTime * 4,
     exhale: config.baseTime * 2,
-  };
+  }).current;
 
   const phaseLabels: Record<Phase, string> = {
     inhale: "Inhala",
@@ -300,6 +297,13 @@ function BreathingTimer({
     hold: "from-accent-indigo to-accent-cyan",
     exhale: "from-accent-cyan to-accent",
   };
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const nextPhase = useCallback(() => {
     const current = phaseRef.current;
@@ -318,15 +322,12 @@ function BreathingTimer({
       setSecondsLeft(phaseDurations.exhale);
       playExhaleSound();
     } else {
-      // exhale done
       if (cycle >= config.cycles) {
-        // All cycles done
-        if (timerRef.current) clearInterval(timerRef.current);
+        clearTimer();
         playCompleteSound();
         onComplete();
         return;
       }
-      // Next cycle
       cycleRef.current = cycle + 1;
       setCurrentCycle(cycle + 1);
       phaseRef.current = "inhale";
@@ -335,64 +336,53 @@ function BreathingTimer({
       setSecondsLeft(phaseDurations.inhale);
       playInhaleSound();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.cycles, config.baseTime]);
+  }, [config.cycles, phaseDurations, clearTimer, onComplete]);
 
-  useEffect(() => {
-    // Play initial sound
-    playInhaleSound();
-
-    timerRef.current = setInterval(() => {
-      const s = secondsRef.current;
-      if (s <= 1) {
-        nextPhase();
-      } else {
-        secondsRef.current = s - 1;
-        setSecondsLeft(s - 1);
-        // Tick on last 3 seconds
-        if (s <= 4) {
-          playTickSound();
-        }
+  const tick = useCallback(() => {
+    const s = secondsRef.current;
+    if (s <= 1) {
+      nextPhase();
+    } else {
+      secondsRef.current = s - 1;
+      setSecondsLeft(s - 1);
+      if (s <= 4) {
+        playTickSound();
       }
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    }
   }, [nextPhase]);
 
-  // Pause/Resume
+  // Start timer on mount
   useEffect(() => {
-    if (isPaused && timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    } else if (!isPaused && !timerRef.current) {
-      timerRef.current = setInterval(() => {
-        const s = secondsRef.current;
-        if (s <= 1) {
-          nextPhase();
-        } else {
-          secondsRef.current = s - 1;
-          setSecondsLeft(s - 1);
-          if (s <= 4) {
-            playTickSound();
-          }
-        }
-      }, 1000);
-    }
-    return () => {
-      if (isPaused && timerRef.current) {
-        clearInterval(timerRef.current);
+    playInhaleSound();
+    timerRef.current = setInterval(tick, 1000);
+    return clearTimer;
+  }, [tick, clearTimer]);
+
+  // Pause / Resume
+  const handlePause = useCallback(() => {
+    setIsPaused((prev) => {
+      const next = !prev;
+      if (next) {
+        clearTimer();
+      } else {
+        // Resume audio context on user gesture
+        initAudio();
+        timerRef.current = setInterval(tick, 1000);
       }
-    };
-  }, [isPaused, nextPhase]);
+      return next;
+    });
+  }, [tick, clearTimer]);
+
+  const handleStop = useCallback(() => {
+    clearTimer();
+    onStop();
+  }, [clearTimer, onStop]);
 
   const totalPhaseTime = phaseDurations[phase];
   const progress = 1 - secondsLeft / totalPhaseTime;
   const circumference = 2 * Math.PI * 140;
   const strokeDashoffset = circumference * (1 - progress);
 
-  // Circle animation class
   const breatheClass =
     phase === "inhale"
       ? "animate-breathe-in"
@@ -400,40 +390,57 @@ function BreathingTimer({
       ? "animate-breathe-out"
       : "animate-breathe-hold";
 
+  const glowColor =
+    phase === "inhale"
+      ? "rgba(94,234,212,0.08)"
+      : phase === "hold"
+      ? "rgba(129,140,248,0.08)"
+      : "rgba(34,211,238,0.08)";
+
+  const innerColor =
+    phase === "inhale"
+      ? "rgba(94,234,212,0.15)"
+      : phase === "hold"
+      ? "rgba(129,140,248,0.15)"
+      : "rgba(34,211,238,0.15)";
+
+  const borderColor =
+    phase === "inhale"
+      ? "rgba(94,234,212,0.2)"
+      : phase === "hold"
+      ? "rgba(129,140,248,0.2)"
+      : "rgba(34,211,238,0.2)";
+
+  const gradientStart =
+    phase === "inhale" ? "#5eead4" : phase === "hold" ? "#818cf8" : "#22d3ee";
+  const gradientEnd =
+    phase === "inhale" ? "#22d3ee" : phase === "hold" ? "#22d3ee" : "#5eead4";
+
   return (
-    <div className="animate-fade-in flex flex-col items-center gap-8">
+    <div className="animate-fade-in flex flex-col items-center gap-6">
       {/* Cycle counter */}
-      <div className="text-center">
-        <span className="text-xs uppercase tracking-widest text-muted">
-          Ciclo {currentCycle} de {config.cycles}
-        </span>
-      </div>
+      <span className="text-xs uppercase tracking-widest text-muted">
+        Ciclo {currentCycle} de {config.cycles}
+      </span>
 
       {/* Main breathing circle with timer */}
-      <div className="relative flex items-center justify-center">
-        {/* Outer glow ring */}
+      <div className="relative flex h-80 w-80 items-center justify-center sm:h-96 sm:w-96">
+        {/* Outer glow */}
         <div
-          className={`absolute h-80 w-80 rounded-full ${breatheClass} sm:h-96 sm:w-96`}
+          className={`absolute inset-0 rounded-full ${breatheClass}`}
           style={
             {
               "--duration": `${totalPhaseTime}s`,
-              background: `radial-gradient(circle, ${
-                phase === "inhale"
-                  ? "rgba(94,234,212,0.08)"
-                  : phase === "hold"
-                  ? "rgba(129,140,248,0.08)"
-                  : "rgba(34,211,238,0.08)"
-              } 0%, transparent 70%)`,
+              background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
             } as React.CSSProperties
           }
         />
 
         {/* Progress ring SVG */}
         <svg
-          className="absolute h-72 w-72 -rotate-90 sm:h-80 sm:w-80"
+          className="absolute inset-4 -rotate-90 sm:inset-8"
           viewBox="0 0 300 300"
         >
-          {/* Background ring */}
           <circle
             cx="150"
             cy="150"
@@ -442,7 +449,6 @@ function BreathingTimer({
             stroke="rgba(255,255,255,0.05)"
             strokeWidth="3"
           />
-          {/* Progress ring */}
           <circle
             cx="150"
             cy="150"
@@ -463,64 +469,34 @@ function BreathingTimer({
               x2="100%"
               y2="100%"
             >
-              <stop
-                offset="0%"
-                stopColor={
-                  phase === "inhale"
-                    ? "#5eead4"
-                    : phase === "hold"
-                    ? "#818cf8"
-                    : "#22d3ee"
-                }
-              />
-              <stop
-                offset="100%"
-                stopColor={
-                  phase === "inhale"
-                    ? "#22d3ee"
-                    : phase === "hold"
-                    ? "#22d3ee"
-                    : "#5eead4"
-                }
-              />
+              <stop offset="0%" stopColor={gradientStart} />
+              <stop offset="100%" stopColor={gradientEnd} />
             </linearGradient>
           </defs>
         </svg>
 
         {/* Inner breathing circle */}
         <div
-          className={`absolute h-44 w-44 rounded-full sm:h-52 sm:w-52 ${breatheClass}`}
+          className={`absolute inset-16 rounded-full sm:inset-20 ${breatheClass}`}
           style={
             {
               "--duration": `${totalPhaseTime}s`,
-              background: `radial-gradient(circle at 40% 40%, ${
-                phase === "inhale"
-                  ? "rgba(94,234,212,0.15)"
-                  : phase === "hold"
-                  ? "rgba(129,140,248,0.15)"
-                  : "rgba(34,211,238,0.15)"
-              }, transparent)`,
-              border: `1px solid ${
-                phase === "inhale"
-                  ? "rgba(94,234,212,0.2)"
-                  : phase === "hold"
-                  ? "rgba(129,140,248,0.2)"
-                  : "rgba(34,211,238,0.2)"
-              }`,
+              background: `radial-gradient(circle at 40% 40%, ${innerColor}, transparent)`,
+              border: `1px solid ${borderColor}`,
             } as React.CSSProperties
           }
         />
 
         {/* Center content */}
-        <div className="relative z-10 flex flex-col items-center gap-2">
+        <div className="relative z-10 flex flex-col items-center">
           <span
-            className={`text-8xl font-extralight tabular-nums drop-shadow-lg sm:text-9xl bg-gradient-to-b ${phaseColors[phase]} bg-clip-text text-transparent`}
+            className={`text-8xl font-extralight tabular-nums leading-none drop-shadow-lg sm:text-9xl bg-gradient-to-b ${phaseColors[phase]} bg-clip-text text-transparent`}
             style={{ fontFamily: "var(--font-cormorant)" }}
           >
             {secondsLeft}
           </span>
           <span
-            className={`text-xl font-light tracking-wide sm:text-2xl bg-gradient-to-r ${phaseColors[phase]} bg-clip-text text-transparent`}
+            className={`mt-2 text-xl font-light tracking-wide sm:text-2xl bg-gradient-to-r ${phaseColors[phase]} bg-clip-text text-transparent`}
             style={{ fontFamily: "var(--font-cormorant)" }}
           >
             {phaseLabels[phase]}
@@ -529,9 +505,9 @@ function BreathingTimer({
       </div>
 
       {/* Phase indicator dots */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-5">
         {(["inhale", "hold", "exhale"] as Phase[]).map((p) => (
-          <div key={p} className="flex flex-col items-center gap-1">
+          <div key={p} className="flex flex-col items-center gap-1.5">
             <div
               className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ${
                 p === phase
@@ -540,7 +516,7 @@ function BreathingTimer({
               }`}
             />
             <span
-              className={`text-[10px] transition-colors ${
+              className={`text-[11px] transition-colors ${
                 p === phase ? "text-accent" : "text-muted"
               }`}
             >
@@ -551,18 +527,15 @@ function BreathingTimer({
       </div>
 
       {/* Controls */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 pt-2">
         <button
-          onClick={() => setIsPaused(!isPaused)}
+          onClick={handlePause}
           className="rounded-full border border-white/10 px-8 py-3 text-sm font-medium text-secondary transition-all hover:border-accent/30 hover:text-foreground active:scale-95"
         >
           {isPaused ? "Reanudar" : "Pausar"}
         </button>
         <button
-          onClick={() => {
-            if (timerRef.current) clearInterval(timerRef.current);
-            onStop();
-          }}
+          onClick={handleStop}
           className="rounded-full border border-red-500/20 px-8 py-3 text-sm font-medium text-red-400/70 transition-all hover:border-red-500/40 hover:text-red-400 active:scale-95"
         >
           Detener
@@ -577,8 +550,8 @@ function BreathingTimer({
 function CompleteScreen({ onRestart }: { onRestart: () => void }) {
   return (
     <div className="animate-float-in flex flex-col items-center gap-10 text-center">
-      <div className="relative flex items-center justify-center">
-        <div className="absolute h-40 w-40 rounded-full bg-accent/5 animate-breathe-hold" />
+      <div className="relative flex h-40 w-40 items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-accent/5 animate-breathe-hold" />
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-cyan shadow-[0_0_60px_rgba(94,234,212,0.3)]">
           <svg
             className="h-12 w-12 text-[#0a0e1a]"
@@ -635,16 +608,14 @@ export default function BreathingApp() {
   // Register service worker
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // SW registration failed, app still works
-      });
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, []);
 
-  const handleStart = () => {
-    initAudio();
+  const handleStart = useCallback(async () => {
+    await initAudio();
     setAppState("breathing");
-  };
+  }, []);
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6 py-12">
@@ -652,8 +623,8 @@ export default function BreathingApp() {
         <>
           {wizardStep === 0 && (
             <WelcomeStep
-              onNext={() => {
-                initAudio();
+              onNext={async () => {
+                await initAudio();
                 setWizardStep(1);
               }}
             />
