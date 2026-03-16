@@ -35,8 +35,8 @@ export const metadata: Metadata = {
     title: "Respira",
   },
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    icon: "/favicon.png",
+    apple: "/icons/apple-touch-icon.png",
   },
 };
 
@@ -48,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${cormorant.variable} ${outfit.variable}`}>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body className="bg-mesh min-h-dvh overflow-x-hidden antialiased">
         {children}
