@@ -427,7 +427,7 @@ function BreathingTimer({
       <div className="relative flex h-80 w-80 items-center justify-center sm:h-96 sm:w-96">
         {/* Outer glow */}
         <div
-          className={`absolute inset-0 rounded-full ${breatheClass}`}
+          className={`absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full sm:h-96 sm:w-96 ${breatheClass}`}
           style={
             {
               "--duration": `${totalPhaseTime}s`,
@@ -438,7 +438,7 @@ function BreathingTimer({
 
         {/* Progress ring SVG */}
         <svg
-          className="absolute inset-4 -rotate-90 sm:inset-8"
+          className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 -rotate-90 sm:h-80 sm:w-80"
           viewBox="0 0 300 300"
         >
           <circle
@@ -477,7 +477,7 @@ function BreathingTimer({
 
         {/* Inner breathing circle */}
         <div
-          className={`absolute inset-16 rounded-full sm:inset-20 ${breatheClass}`}
+          className={`absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full sm:h-56 sm:w-56 ${breatheClass}`}
           style={
             {
               "--duration": `${totalPhaseTime}s`,
