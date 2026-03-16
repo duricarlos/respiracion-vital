@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  initAudio,
-  playInhaleSound,
-  playHoldSound,
-  playExhaleSound,
-  playCompleteSound,
-  playTickSound,
-} from "@/lib/sounds";
+
 
 type Phase = "inhale" | "hold" | "exhale";
 type AppState = "wizard" | "breathing" | "complete";
@@ -314,17 +307,14 @@ function BreathingTimer({
       setPhase("hold");
       secondsRef.current = phaseDurations.hold;
       setSecondsLeft(phaseDurations.hold);
-      playHoldSound();
     } else if (current === "hold") {
       phaseRef.current = "exhale";
       setPhase("exhale");
       secondsRef.current = phaseDurations.exhale;
       setSecondsLeft(phaseDurations.exhale);
-      playExhaleSound();
     } else {
       if (cycle >= config.cycles) {
         clearTimer();
-        playCompleteSound();
         onComplete();
         return;
       }
@@ -334,7 +324,6 @@ function BreathingTimer({
       setPhase("inhale");
       secondsRef.current = phaseDurations.inhale;
       setSecondsLeft(phaseDurations.inhale);
-      playInhaleSound();
     }
   }, [config.cycles, phaseDurations, clearTimer, onComplete]);
 
@@ -345,15 +334,11 @@ function BreathingTimer({
     } else {
       secondsRef.current = s - 1;
       setSecondsLeft(s - 1);
-      if (s <= 4) {
-        playTickSound();
-      }
     }
   }, [nextPhase]);
 
   // Start timer on mount
   useEffect(() => {
-    playInhaleSound();
     timerRef.current = setInterval(tick, 1000);
     return clearTimer;
   }, [tick, clearTimer]);
@@ -365,8 +350,6 @@ function BreathingTimer({
       if (next) {
         clearTimer();
       } else {
-        // Resume audio context on user gesture
-        initAudio();
         timerRef.current = setInterval(tick, 1000);
       }
       return next;
@@ -612,8 +595,7 @@ export default function BreathingApp() {
     }
   }, []);
 
-  const handleStart = useCallback(async () => {
-    await initAudio();
+  const handleStart = useCallback(() => {
     setAppState("breathing");
   }, []);
 
@@ -623,8 +605,7 @@ export default function BreathingApp() {
         <>
           {wizardStep === 0 && (
             <WelcomeStep
-              onNext={async () => {
-                await initAudio();
+              onNext={() => {
                 setWizardStep(1);
               }}
             />

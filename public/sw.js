@@ -1,11 +1,6 @@
-const CACHE_NAME = 'respiracion-vital-v2';
+const CACHE_NAME = 'respiracion-vital-v3';
 const urlsToCache = [
   '/',
-  '/sounds/inhale.mp3',
-  '/sounds/hold.mp3',
-  '/sounds/exhale.mp3',
-  '/sounds/complete.mp3',
-  '/sounds/tick.mp3',
 ];
 
 self.addEventListener('install', (event) => {
